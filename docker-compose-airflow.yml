@@ -1,0 +1,68 @@
+services:
+  airflow-db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: db_username
+      POSTGRES_PASSWORD: db_password
+      POSTGRES_DB: db_name
+    networks: [default]
+
+  airflow-webserver:
+    build:
+      context: .
+      dockerfile: Dockerfile-airflow
+    depends_on: [airflow-db]
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__FERNET_KEY: "fernet_key" 
+      # Generate fervent key by: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: db+db_driver://db_username:db_password@db_hostname/db_name
+      AIRFLOW__LOGGING__REMOTE_LOGGING: "False"
+      #use these arguments and make remote loggin true to send logs from airflow directly to minio
+      #AIRFLOW_CONN_MINIO_DEFAULT: s3://minio_user:minio_pass@minio_url:9000?host=http%3A%2F%2Fminio%3A9000
+      #AIRFLOW__LOGGING__REMOTE_LOGGING: "True"
+      #AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID: "minio_default"
+      #AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER: "s3://minio_bucket_name"
+      #AIRFLOW__AWS__AWS_ENDPOINT_URL: "http://minio_url:9000"
+      #AIRFLOW__AWS__AWS_ACCESS_KEY_ID: "minio_user"
+      #AIRFLOW__AWS__AWS_SECRET_ACCESS_KEY: "minio_pass"
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - airflow_logs:/opt/airflow/logs
+    ports:
+      - "8080:8080"
+    command: webserver
+    networks: [default]
+
+  airflow-scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile-airflow
+    depends_on: [airflow-db]
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__FERNET_KEY: "fernet_key"
+      # Generate fervent key by: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: db+db_driver://db_username:db_password@db_hostname/db_name
+      AIRFLOW__LOGGING__REMOTE_LOGGING: "False"
+      #use these arguments and make remote loggin true to send logs from airflow directly to minio
+      #AIRFLOW_CONN_MINIO_DEFAULT: s3://minio_user:minio_pass@minio_url:9000?host=http%3A%2F%2Fminio%3A9000
+      #AIRFLOW__LOGGING__REMOTE_LOGGING: "True"
+      #AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID: "minio_default"
+      #AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER: "s3://minio_bucket_name"
+      #AIRFLOW__AWS__AWS_ENDPOINT_URL: "http://minio_url:9000"
+      #AIRFLOW__AWS__AWS_ACCESS_KEY_ID: "minio_user"
+      #AIRFLOW__AWS__AWS_SECRET_ACCESS_KEY: "minio_pass
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - airflow_logs:/opt/airflow/logs
+    command: scheduler
+    networks: [default]
+
+volumes:
+  airflow_logs:
+
+networks:
+  default:
+    external: true
+    name: observability-net

@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  grafana:
+    image: grafana/grafana:10.4.1
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: grafana_pass
+    ports:
+      - "3000:3000"
+    networks:
+      - default
+
+networks:
+  default:
+    external: true
+    name: observability-net
+

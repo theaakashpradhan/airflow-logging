@@ -1,0 +1,52 @@
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  log_level: info
+
+ingester:
+  lifecycler:
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+  chunk_idle_period: 5m
+  max_transfer_retries: 0
+  wal:
+    enabled: true
+    dir: /loki/wal
+
+schema_config:
+  configs:
+    - from: 2020-10-24
+      store: boltdb-shipper
+      object_store: s3
+      schema: v11
+      index:
+        prefix: index_
+        period: 24h
+
+storage_config:
+  boltdb_shipper:
+    active_index_directory: /loki/index
+    cache_location: /loki/cache
+    shared_store: s3
+
+  aws:
+    # You can keep either the URL form below OR individual fields.
+    # For MinIO, individual fields are often clearer:
+    endpoint: http://minio_url:9000
+    bucketnames: minio_bucket_name
+    access_key_id: minio_user
+    secret_access_key: minio_pass
+    s3forcepathstyle: true
+    insecure: true  # since using http
+
+compactor:
+  working_directory: /loki/compactor
+  shared_store: s3
+
+limits_config:
+  ingestion_rate_mb: 20
+  ingestion_burst_size_mb: 30
+  max_cache_freshness_per_query: 10m
